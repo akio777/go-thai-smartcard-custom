@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
 	"github.com/somprasongd/go-thai-smartcard/pkg/model"
 	"github.com/somprasongd/go-thai-smartcard/pkg/server"
 	"github.com/somprasongd/go-thai-smartcard/pkg/smc"
@@ -15,6 +15,7 @@ import (
 
 func main() {
 	// load env
+	logger.InitLogger()
 	port := util.GetEnv("SMC_AGENT_PORT", "9898")
 	showImage := util.GetEnvBool("SMC_SHOW_IMAGE", true)
 	showLaser := util.GetEnvBool("SMC_SHOW_LASER", true)
@@ -39,7 +40,7 @@ func main() {
 		for {
 			err := smc.StartDaemon(broadcast, opts)
 			if err != nil {
-				log.Printf("Error occurred in daemon process (%v), wait 2 seconds to retry or press Ctrl+C to exit.", err.Error())
+				logger.LOGGER().Printf("Error occurred in daemon process (%v), wait 2 seconds to retry or press Ctrl+C to exit.", err.Error())
 
 				message := model.Message{
 					Event: "smc-error",
@@ -58,6 +59,6 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	s := <-sig
-	log.Printf("Received %v signal to shutdown.", s)
+	logger.LOGGER().Printf("Received %v signal to shutdown.", s)
 
 }

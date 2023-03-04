@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
 	"github.com/somprasongd/go-thai-smartcard/pkg/model"
 )
 
@@ -17,6 +18,7 @@ type ServerConfig struct {
 var indexPage []byte
 
 func Serve(cfg ServerConfig) {
+
 	socketServer := NewSocketIO()
 	go func() {
 		if err := socketServer.Serve(); err != nil {
@@ -44,6 +46,8 @@ func Serve(cfg ServerConfig) {
 		w.Write(indexPage)
 	})
 
-	log.Println("Serving at localhost:" + cfg.Port)
-	log.Fatal(http.ListenAndServe(":"+cfg.Port, nil))
+	// log.Println("Serving at localhost:" + cfg.Port)
+	// log.Fatal(http.ListenAndServe("localhost:"+cfg.Port, nil))
+	logger.LOGGER().Infoln("Serving at localhost:" + cfg.Port)
+	logger.LOGGER().Fatal(http.ListenAndServe("localhost:"+cfg.Port, nil))
 }
