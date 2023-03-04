@@ -12,6 +12,7 @@ type Data struct {
 }
 
 type Message struct {
+	Reader  string `json:"reader"`
 	Event   string `json:"event"`
 	Payload any    `json:"payload,omitempty"`
 }

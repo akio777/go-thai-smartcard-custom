@@ -1,9 +1,8 @@
 package smc
 
 import (
-	"errors"
-	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/ebfe/scard"
@@ -39,58 +38,60 @@ func (s *smartCard) ListReaders() ([]string, error) {
 	return util.ListReaders(ctx)
 }
 
-func (s *smartCard) Read(readerName *string, opts *Options) (*model.Data, error) {
-	if opts == nil {
-		opts = &Options{
-			ShowFaceImage: true,
-			ShowNhsoData:  false,
-			ShowLaserData: false,
-		}
-	}
+// func (s *smartCard) Read(readerName *string, opts *Options) (*model.Data, error) {
+// 	logger.LOGGER().Info("Read")
+// 	if opts == nil {
+// 		opts = &Options{
+// 			ShowFaceImage: true,
+// 			ShowNhsoData:  false,
+// 			ShowLaserData: false,
+// 		}
+// 	}
 
-	readers := []string{}
+// 	readers := []string{}
 
-	if readerName == nil {
-		r, err := s.ListReaders()
-		if err != nil {
-			return nil, err
-		}
-		readers = r
-	} else {
-		readers = append(readers, *readerName)
-	}
+// 	if readerName == nil {
+// 		r, err := s.ListReaders()
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		readers = r
+// 	} else {
+// 		readers = append(readers, *readerName)
+// 	}
 
-	if len(readers) == 0 {
-		return nil, errors.New("not available readers")
-	}
+// 	if len(readers) == 0 {
+// 		return nil, errors.New("not available readers")
+// 	}
 
-	// Establish a context
-	ctx, err := util.EstablishContext()
-	if err != nil {
-		return nil, err
-	}
-	defer util.ReleaseContext(ctx)
+// 	// Establish a context
+// 	ctx, err := util.EstablishContext()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer util.ReleaseContext(ctx)
 
-	rs := util.InitReaderStates(readers)
+// 	rs := util.InitReaderStates(readers)
 
-	log.Println("Waiting for a Card Inserted")
-	index, err := util.WaitUntilCardPresent(ctx, rs)
-	if err != nil {
-		return nil, err
-	}
+// 	log.Println("Waiting for a Card Inserted")
+// 	index, err := util.WaitUntilCardPresent(ctx, rs)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	reader := readers[index]
-	card, data, err := s.readCard(ctx, reader, opts)
-	defer util.DisconnectCard(card)
+// 	reader := readers[index]
+// 	card, data, err := s.readCard(ctx, reader, opts)
+// 	defer util.DisconnectCard(card)
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return data, nil
-}
+// 	return data, nil
+// }
 
 func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (*scard.Card, *model.Data, error) {
+	logger.LOGGER().Info("readCard")
 	log.Printf("Connecting to card with %s", reader)
 	card, err := util.ConnectCard(ctx, reader)
 	if err != nil {
@@ -146,6 +147,9 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 			ShowLaserData: false,
 		}
 	}
+
+	util.InitCardReaderList()
+
 	// Establish a context
 	ctx, err := util.EstablishContext()
 	if err != nil {
@@ -154,13 +158,30 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	}
 	defer util.ReleaseContext(ctx)
 
-	chWaitReaders := make(chan []string)
-	go func(chWaitReaders chan []string) {
-		logger.LOGGER().Info("go func chWaitReaders")
+	// chWaitReaders := make(chan []string)
+	insertedCardChan := make(chan string)
+	connectedCardReaders := make(chan []scard.ReaderState)
+	var readers []string
+	var Mtx sync.Mutex
+	go func() {
+		// logger.LOGGER().Info("go func chWaitReaders")
+		cardReaderAmount := 0
 		for {
-			logger.LOGGER().Info("reading ListReaders")
+			// fmt.Println("CURRENT ActiveCardReader : ", util.GetActiveCardReader())
+			// logger.LOGGER().Info("latest connected card reader : ", cardReaderAmount)
 			// List available readers
-			readers, err := util.ListReaders(ctx)
+			Mtx.Lock()
+			readers, err = util.ListReaders(ctx)
+			if cardReaderAmount == 0 {
+				util.InitCardReaderList()
+			}
+			if len(readers) != cardReaderAmount {
+				logger.LOGGER().Info("UPDATE WATCHER")
+				rs := util.InitReaderStates(readers)
+				connectedCardReaders <- rs
+			}
+			cardReaderAmount = len(readers)
+			Mtx.Unlock()
 			if err != nil {
 				if broadcast != nil {
 					message := model.Message{
@@ -175,10 +196,10 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			logger.LOGGER().Info(fmt.Sprintf("Available %d readers:\n", len(readers)))
-			for i, reader := range readers {
-				logger.LOGGER().Info(fmt.Sprintf("[%d] %s\n", i, reader))
-			}
+			// logger.LOGGER().Info(fmt.Sprintf("Available %d readers:\n", len(readers)))
+			// for i, reader := range readers {
+			// 	logger.LOGGER().Info(fmt.Sprintf("[%d] %s\n", i, reader))
+			// }
 
 			if len(readers) == 0 {
 				if broadcast != nil {
@@ -194,71 +215,122 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				time.Sleep(2 * time.Second)
 				continue
 			}
-
-			chWaitReaders <- readers
-			break
+			// time.Sleep(3 * time.Second)
 		}
-	}(chWaitReaders)
-	readers := <-chWaitReaders
+	}()
+	// readers := <-chWaitReaders
+	// readers, err = util.ListReaders(ctx)
+	// if err != nil {
+	// 	logger.LOGGER().Error("ERROR ListReaders : ", err)
+	// }
 
-	rs := util.InitReaderStates(readers)
-	for {
-		logger.LOGGER().Info("Waiting for a Card Inserted")
-		index, err := util.WaitUntilCardPresent(ctx, rs)
-		if err != nil {
-			logger.LOGGER().Error(fmt.Sprintf("waiting card error %s\n", err.Error()))
-			return err
+	go func() {
+		for {
+			newCardReaders := <-connectedCardReaders
+			// logger.LOGGER().Warn("NEW CONNECTING CARD READER : ", newCardReader)
+			util.AddCardReader(newCardReaders)
+			go util.CardReaderWatcher(ctx, newCardReaders, insertedCardChan)
 		}
+	}()
 
-		// Connect to card
-		reader := readers[index]
-		if broadcast != nil {
-			message := model.Message{
-				Event: "smc-inserted",
-				Payload: map[string]string{
-					"message": "Connected to " + reader,
-				},
-			}
-			broadcast <- message
-		}
-
-		card, data, err := s.readCard(ctx, reader, opts)
-
-		if err != nil {
-			util.DisconnectCard(card)
-			if broadcast != nil {
-				message := model.Message{
-					Event: "smc-error",
-					Payload: map[string]string{
-						"message": err.Error(),
-					},
+	go func() {
+		for {
+			newInserted := <-insertedCardChan
+			var card *scard.Card
+			if newInserted != "" {
+				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
+				newCard, data, err := s.readCard(ctx, newInserted, opts)
+				card = newCard
+				if err != nil {
+					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
 				}
-				broadcast <- message
+				if data != nil {
+					logger.LOGGER().Warn("NEW DATA : ", data)
+					message := model.Message{
+						Reader:  newInserted,
+						Event:   "smc-data",
+						Payload: data,
+					}
+					broadcast <- message
+					util.DisconnectCard(card)
+				}
+			} else {
+				util.DisconnectCard(card)
+				logger.LOGGER().Warn("CARD WAS REMOVE")
 			}
-			continue
 		}
+	}()
 
-		if data != nil && broadcast != nil {
-			message := model.Message{
-				Event:   "smc-data",
-				Payload: data,
-			}
-			broadcast <- message
-		}
+	// for _, reader := range rs {
+	// 	go func(reader scard.ReaderState) {
+	// 		for {
+	// 			go util.WaitUntilCardPresentV2(ctx, reader, insertedCardChan)
+	// 		}
+	// 	}(reader)
+	// }
 
-		log.Println("Waiting for a Card Removed")
-		util.WaitUntilCardRemove(ctx, rs)
+	for {
+		// _, err := util.WaitUntilCardPresent(ctx, rs, insertedCardChan)
+		// if err != nil {
+		// 	logger.LOGGER().Error(fmt.Sprintf("waiting card error %s\n", err.Error()))
+		// 	return err
+		// }
 
-		if broadcast != nil {
-			message := model.Message{
-				Event: "smc-removed",
-				Payload: map[string]string{
-					"message": "Disonnected from " + reader,
-				},
-			}
-			broadcast <- message
-		}
+		// 	// Connect to card
+		// 	// reader := readers[index]
+		// 	// insertedCard <- reader
+		// 	// continue
+		// 	// if broadcast != nil {
+		// 	// 	message := model.Message{
+		// 	// 		Reader: reader,
+		// 	// 		Event:  "smc-inserted",
+		// 	// 		Payload: map[string]string{
+		// 	// 			"message": "Connected to " + reader,
+		// 	// 		},
+		// 	// 	}
+		// 	// 	broadcast <- message
+		// 	// }
 
-		util.DisconnectCard(card)
+		// 	// card, data, err := s.readCard(ctx, reader, opts)
+
+		// 	// if err != nil {
+		// 	// 	util.DisconnectCard(card)
+		// 	// 	if broadcast != nil {
+		// 	// 		message := model.Message{
+		// 	// 			Reader: reader,
+		// 	// 			Event:  "smc-error",
+		// 	// 			Payload: map[string]string{
+		// 	// 				"message": err.Error(),
+		// 	// 			},
+		// 	// 		}
+		// 	// 		broadcast <- message
+		// 	// 	}
+		// 	// 	continue
+		// 	// }
+
+		// 	// if data != nil && broadcast != nil {
+		// message := model.Message{
+		// 	Reader:  reader,
+		// 	Event:   "smc-data",
+		// 	Payload: data,
+		// }
+		// broadcast <- message
+		// 	// }
+
+		// 	// log.Println("Waiting for a Card Removed")
+		// util.WaitUntilCardRemove(ctx, rs, insertedCardChan)
+
+		// 	// if broadcast != nil {
+		// 	// 	message := model.Message{
+		// 	// 		Reader: reader,
+		// 	// 		Event:  "smc-removed",
+		// 	// 		Payload: map[string]string{
+		// 	// 			"message": "Disonnected from " + reader,
+		// 	// 		},
+		// 	// 	}
+		// 	// 	broadcast <- message
+		// 	// }
+
+		// 	// util.DisconnectCard(card)
 	}
 }

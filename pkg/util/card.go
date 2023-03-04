@@ -31,114 +31,39 @@ func InitReaderStates(readers []string) []scard.ReaderState {
 	return rs
 }
 
-func WaitUntilCardPresent(ctx *scard.Context, rs []scard.ReaderState) (int, error) {
-	// log.Println(
-	// 	scard.StateUnaware,
-	// 	scard.StateIgnore,
-	// 	scard.StateChanged,
-	// 	scard.StateUnknown,
-	// 	scard.StateUnavailable,
-	// 	scard.StateEmpty,
-	// 	scard.StatePresent,
-	// 	scard.StateAtrmatch,
-	// 	scard.StateExclusive,
-	// 	scard.StateInuse,
-	// 	scard.StateMute,
-	// 	scard.StateUnpowered,
-	// )
+func WaitUntilCardPresent(ctx *scard.Context, rs []scard.ReaderState, insertedCardChan chan<- string) (int, error) {
 	for {
 		err := ctx.GetStatusChange(rs, -1)
 		if err != nil {
 			return -1, err
 		}
-		// log.Println("StatusChanged")
 		for i := range rs {
-			// log.Println(
-			// 	rs[i].EventState&scard.StateUnaware,
-			// 	rs[i].EventState&scard.StateIgnore,
-			// 	rs[i].EventState&scard.StateChanged,
-			// 	rs[i].EventState&scard.StateUnknown,
-			// 	rs[i].EventState&scard.StateUnavailable,
-			// 	rs[i].EventState&scard.StateEmpty,
-			// 	rs[i].EventState&scard.StatePresent,
-			// 	rs[i].EventState&scard.StateAtrmatch,
-			// 	rs[i].EventState&scard.StateExclusive,
-			// 	rs[i].EventState&scard.StateInuse,
-			// 	rs[i].EventState&scard.StateMute,
-			// 	rs[i].EventState&scard.StateUnpowered,
-			// )
-			// log.Println(
-			// 	rs[i].Reader,
-			// 	rs[i].CurrentState,
-			// 	rs[i].EventState,
-			// 	scard.StatePresent,
-			// 	rs[i].EventState&scard.StatePresent)
 
 			rs[i].CurrentState = rs[i].EventState
-			// if rs[i].EventState&scard.StateUnpowered != 0 {
-			// 	log.Println("Card removed")
-			// 	continue
-			// }
 			if rs[i].EventState&scard.StatePresent != 0 {
 				log.Println("Card inserted")
+				insertedCardChan <- rs[i].Reader
 				return i, nil
 			}
 		}
 	}
 }
 
-func WaitUntilCardRemove(ctx *scard.Context, rs []scard.ReaderState) (int, error) {
-	// log.Println(
-	// 	scard.StateUnaware,
-	// 	scard.StateIgnore,
-	// 	scard.StateChanged,
-	// 	scard.StateUnknown,
-	// 	scard.StateUnavailable,
-	// 	scard.StateEmpty,
-	// 	scard.StatePresent,
-	// 	scard.StateAtrmatch,
-	// 	scard.StateExclusive,
-	// 	scard.StateInuse,
-	// 	scard.StateMute,
-	// 	scard.StateUnpowered,
-	// )
+func WaitUntilCardRemove(ctx *scard.Context, rs []scard.ReaderState, insertedCardChan chan<- string) (int, error) {
 	for {
 		err := ctx.GetStatusChange(rs, -1)
 		if err != nil {
 			return -1, err
 		}
-		// log.Println("StatusChanged")
 		for i := range rs {
-			// log.Println(
-			// 	rs[i].EventState&scard.StateUnaware,
-			// 	rs[i].EventState&scard.StateIgnore,
-			// 	rs[i].EventState&scard.StateChanged,
-			// 	rs[i].EventState&scard.StateUnknown,
-			// 	rs[i].EventState&scard.StateUnavailable,
-			// 	rs[i].EventState&scard.StateEmpty,
-			// 	rs[i].EventState&scard.StatePresent,
-			// 	rs[i].EventState&scard.StateAtrmatch,
-			// 	rs[i].EventState&scard.StateExclusive,
-			// 	rs[i].EventState&scard.StateInuse,
-			// 	rs[i].EventState&scard.StateMute,
-			// 	rs[i].EventState&scard.StateUnpowered,
-			// )
-			// log.Println(
-			// 	rs[i].Reader,
-			// 	rs[i].CurrentState,
-			// 	rs[i].EventState,
-			// 	scard.StateEmpty,
-			// 	rs[i].EventState&scard.StateEmpty)
 
 			rs[i].CurrentState = rs[i].EventState
 			if rs[i].EventState&scard.StateEmpty != 0 {
 				log.Println("Card removed")
+				insertedCardChan <- ""
 				return i, nil
 			}
-			// if rs[i].EventState&scard.StatePresent != 0 {
-			// 	log.Println("Card inserted")
-			// 	continue
-			// }
+
 		}
 	}
 }

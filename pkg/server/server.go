@@ -34,6 +34,7 @@ func Serve(cfg ServerConfig) {
 			msg, ok := <-cfg.Broadcast
 			if ok {
 				logger.LOGGER().Info("BROADCAST TRIGGED")
+				logger.LOGGER().Info("MSG : ", msg)
 				socketServer.Broadcast(msg)
 				webSocket.Broadcast(msg)
 			}
@@ -47,8 +48,6 @@ func Serve(cfg ServerConfig) {
 		w.Write(indexPage)
 	})
 
-	// log.Println("Serving at localhost:" + cfg.Port)
-	// log.Fatal(http.ListenAndServe("localhost:"+cfg.Port, nil))
 	logger.LOGGER().Infoln("Serving at localhost:" + cfg.Port)
 	logger.LOGGER().Fatal(http.ListenAndServe("localhost:"+cfg.Port, nil))
 }
