@@ -2,10 +2,12 @@ package smc
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/ebfe/scard"
+	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
 	"github.com/somprasongd/go-thai-smartcard/pkg/model"
 	"github.com/somprasongd/go-thai-smartcard/pkg/util"
 )
@@ -20,10 +22,12 @@ type smartCard struct {
 }
 
 func NewSmartCard() *smartCard {
+	logger.LOGGER().Info("NewSmartCard")
 	return &smartCard{}
 }
 
 func (s *smartCard) ListReaders() ([]string, error) {
+	logger.LOGGER().Info("ListReaders")
 	// Establish a context
 	ctx, err := util.EstablishContext()
 	if err != nil {
@@ -134,6 +138,7 @@ func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (
 }
 
 func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) error {
+	logger.LOGGER().Info("StartDaemon")
 	if opts == nil {
 		opts = &Options{
 			ShowFaceImage: true,
@@ -151,7 +156,9 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 
 	chWaitReaders := make(chan []string)
 	go func(chWaitReaders chan []string) {
+		logger.LOGGER().Info("go func chWaitReaders")
 		for {
+			logger.LOGGER().Info("reading ListReaders")
 			// List available readers
 			readers, err := util.ListReaders(ctx)
 			if err != nil {
@@ -164,14 +171,13 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 					}
 					broadcast <- message
 				}
-				log.Println("Cannot find a smart card reader, Wait 2 seconds")
+				logger.LOGGER().Error("Cannot find a smart card reader, Wait 2 seconds")
 				time.Sleep(2 * time.Second)
 				continue
 			}
-
-			log.Printf("Available %d readers:\n", len(readers))
+			logger.LOGGER().Info(fmt.Sprintf("Available %d readers:\n", len(readers)))
 			for i, reader := range readers {
-				log.Printf("[%d] %s\n", i, reader)
+				logger.LOGGER().Info(fmt.Sprintf("[%d] %s\n", i, reader))
 			}
 
 			if len(readers) == 0 {
@@ -184,7 +190,7 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 					}
 					broadcast <- message
 				}
-				log.Println("Cannot find a smart card reader, Wait 2 seconds")
+				logger.LOGGER().Error("Cannot find a smart card reader, Wait 2 seconds")
 				time.Sleep(2 * time.Second)
 				continue
 			}
@@ -197,16 +203,15 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 
 	rs := util.InitReaderStates(readers)
 	for {
-		log.Println("Waiting for a Card Inserted")
+		logger.LOGGER().Info("Waiting for a Card Inserted")
 		index, err := util.WaitUntilCardPresent(ctx, rs)
 		if err != nil {
-			log.Printf("waiting card error %s\n", err.Error())
+			logger.LOGGER().Error(fmt.Sprintf("waiting card error %s\n", err.Error()))
 			return err
 		}
 
 		// Connect to card
 		reader := readers[index]
-
 		if broadcast != nil {
 			message := model.Message{
 				Event: "smc-inserted",

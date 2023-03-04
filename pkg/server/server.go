@@ -33,6 +33,7 @@ func Serve(cfg ServerConfig) {
 		for {
 			msg, ok := <-cfg.Broadcast
 			if ok {
+				logger.LOGGER().Info("BROADCAST TRIGGED")
 				socketServer.Broadcast(msg)
 				webSocket.Broadcast(msg)
 			}
