@@ -1,4 +1,4 @@
-package util
+package smc
 
 const (
 	THAI_SMC = "Identive CLOUD 2700 R Smart Card Reader"

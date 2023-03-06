@@ -2,6 +2,7 @@ package smc
 
 import (
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -99,16 +100,16 @@ func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (
 		return card, nil, err
 	}
 
-	defer func(card *scard.Card) {
-		if rcv := recover(); rcv != nil {
-			_, e := card.Status()
-			if e != nil {
-				log.Println("Recover readCard:", e.Error())
-				return
-			}
-			log.Println("Recover readCard:", rcv)
-		}
-	}(card)
+	// defer func(card *scard.Card) {
+	// 	if rcv := recover(); rcv != nil {
+	// 		_, e := card.Status()
+	// 		if e != nil {
+	// 			log.Println("Recover readCard:", e.Error())
+	// 			return
+	// 		}
+	// 		log.Println("Recover readCard:", rcv)
+	// 	}
+	// }(card)
 
 	status, err := card.Status()
 	if err != nil {
@@ -117,23 +118,29 @@ func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (
 	}
 
 	cmd := util.GetResponseCommand(status.Atr)
-
 	data := model.Data{}
+	if strings.Contains(status.Reader, MIFARE) {
+		mifareReader := NewMifareReader(card, cmd)
+		mifareReader.Select()
+		data.Personal = &model.Personal{
+			Cid: mifareReader.uid,
+		}
+	} else if strings.Contains(status.Reader, THAI_SMC) {
+		personalReader := NewPersonalReader(card, cmd)
+		personalReader.Select()
+		data.Personal = personalReader.Read(opts.ShowFaceImage)
 
-	personalReader := NewPersonalReader(card, cmd)
-	personalReader.Select()
-	data.Personal = personalReader.Read(opts.ShowFaceImage)
+		if opts.ShowLaserData {
+			cardReader := NewCardReader(card, cmd)
+			cardReader.Select()
+			data.Card = &model.Card{LaserId: cardReader.ReadLaserId()}
+		}
 
-	if opts.ShowLaserData {
-		cardReader := NewCardReader(card, cmd)
-		cardReader.Select()
-		data.Card = &model.Card{LaserId: cardReader.ReadLaserId()}
-	}
-
-	if opts.ShowNhsoData {
-		nhsoReader := NewNhsoReader(card, cmd)
-		nhsoReader.Select()
-		data.Nhso = nhsoReader.Read()
+		if opts.ShowNhsoData {
+			nhsoReader := NewNhsoReader(card, cmd)
+			nhsoReader.Select()
+			data.Nhso = nhsoReader.Read()
+		}
 	}
 	return card, &data, nil
 }
