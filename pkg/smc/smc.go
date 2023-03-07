@@ -253,10 +253,14 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				}
 				if data != nil {
 					logger.LOGGER().Warn("NEW DATA : ", data)
+					logger.LOGGER().Warn("FROM : ", newInserted)
 					message := model.Message{
 						Reader:  newInserted,
 						Event:   "smc-data",
 						Payload: data,
+					}
+					if newInserted == MIFARE {
+						message.Event = "mifare-data"
 					}
 					broadcast <- message
 					util.DisconnectCard(card)
