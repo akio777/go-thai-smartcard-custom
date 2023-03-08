@@ -1,3 +1,7 @@
+# this repo fork from this :
+https://github.com/somprasongd/go-thai-smartcard
+
+
 # go-thai-smartcard
 
 Go application read personal and nhso data from thai id card, it run in the background and wait until inserted card then send readed data to everyone via [https://socket.io/](socket.io) and [WebSockets](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API).
@@ -168,13 +172,3 @@ pm2 save
   }
 </script>
 ```
-
-## Other Version
-
-- Nodejs Version: https://github.com/somprasongd/thai-smartcard-nodejs
-
-## Donate
-
-สนับสนุนได้ผ่านทาง Promptpay
-
-<img src="https://bit.ly/3gusiz8">
