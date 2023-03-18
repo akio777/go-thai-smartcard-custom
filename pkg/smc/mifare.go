@@ -1,6 +1,7 @@
 package smc
 
 import (
+	"encoding/binary"
 	"fmt"
 
 	"github.com/ebfe/scard"
@@ -29,8 +30,9 @@ func (r *mifareReader) Select() error {
 		return err
 	}
 	var str string
-	for _, b := range resp[1:5] {
-		str += fmt.Sprintf("%d", b)
+	str = fmt.Sprintf("%d", binary.LittleEndian.Uint32(resp[0:4]))
+	if len(str) < 10 {
+		str = fmt.Sprintf("%d%s", 0, str)
 	}
 	r.uid = str
 	return nil
