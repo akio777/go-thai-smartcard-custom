@@ -29,11 +29,13 @@ func (r *mifareReader) Select() error {
 		fmt.Printf("Failed to retrieve UID: %s\n", err)
 		return err
 	}
-	var str string
-	str = fmt.Sprintf("%d", binary.LittleEndian.Uint32(resp[0:4]))
-	if len(str) < 10 {
-		str = fmt.Sprintf("%d%s", 0, str)
+	fmt.Printf("Card UID: ")
+	for _, b := range resp[0:4] {
+		fmt.Printf("%02X ", b)
 	}
+	str := fmt.Sprintf("%010d", binary.LittleEndian.Uint32(resp[0:4]))
+	fmt.Printf("\nID: %s\n", str)
+
 	r.uid = str
 	return nil
 }
