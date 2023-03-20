@@ -250,6 +250,7 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				card = newCard
 				if err != nil {
 					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
+					util.DisconnectCard(card)
 				}
 				if data != nil {
 					logger.LOGGER().Warn("NEW DATA : ", data)
@@ -272,77 +273,7 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 			}
 		}
 	}()
-
-	// for _, reader := range rs {
-	// 	go func(reader scard.ReaderState) {
-	// 		for {
-	// 			go util.WaitUntilCardPresentV2(ctx, reader, insertedCardChan)
-	// 		}
-	// 	}(reader)
-	// }
-
 	for {
-		// _, err := util.WaitUntilCardPresent(ctx, rs, insertedCardChan)
-		// if err != nil {
-		// 	logger.LOGGER().Error(fmt.Sprintf("waiting card error %s\n", err.Error()))
-		// 	return err
-		// }
 
-		// 	// Connect to card
-		// 	// reader := readers[index]
-		// 	// insertedCard <- reader
-		// 	// continue
-		// 	// if broadcast != nil {
-		// 	// 	message := model.Message{
-		// 	// 		Reader: reader,
-		// 	// 		Event:  "smc-inserted",
-		// 	// 		Payload: map[string]string{
-		// 	// 			"message": "Connected to " + reader,
-		// 	// 		},
-		// 	// 	}
-		// 	// 	broadcast <- message
-		// 	// }
-
-		// 	// card, data, err := s.readCard(ctx, reader, opts)
-
-		// 	// if err != nil {
-		// 	// 	util.DisconnectCard(card)
-		// 	// 	if broadcast != nil {
-		// 	// 		message := model.Message{
-		// 	// 			Reader: reader,
-		// 	// 			Event:  "smc-error",
-		// 	// 			Payload: map[string]string{
-		// 	// 				"message": err.Error(),
-		// 	// 			},
-		// 	// 		}
-		// 	// 		broadcast <- message
-		// 	// 	}
-		// 	// 	continue
-		// 	// }
-
-		// 	// if data != nil && broadcast != nil {
-		// message := model.Message{
-		// 	Reader:  reader,
-		// 	Event:   "smc-data",
-		// 	Payload: data,
-		// }
-		// broadcast <- message
-		// 	// }
-
-		// 	// log.Println("Waiting for a Card Removed")
-		// util.WaitUntilCardRemove(ctx, rs, insertedCardChan)
-
-		// 	// if broadcast != nil {
-		// 	// 	message := model.Message{
-		// 	// 		Reader: reader,
-		// 	// 		Event:  "smc-removed",
-		// 	// 		Payload: map[string]string{
-		// 	// 			"message": "Disonnected from " + reader,
-		// 	// 		},
-		// 	// 	}
-		// 	// 	broadcast <- message
-		// 	// }
-
-		// 	// util.DisconnectCard(card)
 	}
 }
