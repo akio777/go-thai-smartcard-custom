@@ -229,14 +229,14 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	go func() {
 		for {
 			newInserted := <-insertedCardChan
-			var card *scard.Card
+			// var card *scard.Card
 
 			if newInserted != "" {
 				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
-				newCard, data, err := s.readCard(ctx, newInserted, opts)
+				_, data, err := s.readCard(ctx, newInserted, opts)
 				if err != nil {
 					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
-					util.DisconnectCard(newCard)
+					// util.DisconnectCard(newCard)
 					time.Sleep(1 * time.Second)
 					continue
 				}
@@ -254,12 +254,12 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 					}
 					broadcast <- message
 					time.Sleep(1 * time.Second)
-					util.DisconnectCard(card)
+					// util.DisconnectCard(card)
 					continue
 				}
 			} else {
 				time.Sleep(1 * time.Second)
-				util.DisconnectCard(card)
+				// util.DisconnectCard(card)
 				logger.LOGGER().Warn("CARD WAS REMOVE")
 				continue
 			}
