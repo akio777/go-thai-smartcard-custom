@@ -229,15 +229,16 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	go func() {
 		for {
 			newInserted := <-insertedCardChan
-			// var card *scard.Card
-
+			var card *scard.Card
+			time.Sleep(500 * time.Millisecond)
 			if newInserted != "" {
 				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
-				_, data, err := s.readCard(ctx, newInserted, opts)
+				newCard, data, err := s.readCard(ctx, newInserted, opts)
+				card = newCard
 				if err != nil {
 					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
 					// util.DisconnectCard(newCard)
-					time.Sleep(1 * time.Second)
+					// time.Sleep(1 * time.Second)
 					continue
 				}
 				if data != nil {
@@ -253,19 +254,17 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 						message.Event = "mifare-data"
 					}
 					broadcast <- message
-					time.Sleep(1 * time.Second)
+					// time.Sleep(1 * time.Second)
 					// util.DisconnectCard(card)
 					continue
 				}
-			} else {
-				time.Sleep(1 * time.Second)
-				// util.DisconnectCard(card)
-				logger.LOGGER().Warn("CARD WAS REMOVE")
-				continue
 			}
+			util.DisconnectCard(card)
+			logger.LOGGER().Warn("CARD WAS REMOVE")
+			continue
 		}
 	}()
 	for {
-		time.Sleep(250 * time.Millisecond)
+		// time.Sleep(250 * time.Millisecond)
 	}
 }
