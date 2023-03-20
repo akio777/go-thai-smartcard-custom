@@ -170,13 +170,18 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	connectedCardReaders := make(chan []scard.ReaderState)
 	var readers []string
 	var Mtx sync.Mutex
+	cardReaderAmount := 0
+
 	go func() {
-		// logger.LOGGER().Info("go func chWaitReaders")
-		cardReaderAmount := 0
 		for {
-			// fmt.Println("CURRENT ActiveCardReader : ", util.GetActiveCardReader())
-			// logger.LOGGER().Info("latest connected card reader : ", cardReaderAmount)
-			// List available readers
+			newCardReaders := <-connectedCardReaders
+			util.AddCardReader(newCardReaders)
+			go util.CardReaderWatcher(ctx, newCardReaders, insertedCardChan)
+		}
+	}()
+
+	go func() {
+		for {
 			Mtx.Lock()
 			readers, err = util.ListReaders(ctx)
 			if cardReaderAmount == 0 {
@@ -203,10 +208,6 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			// logger.LOGGER().Info(fmt.Sprintf("Available %d readers:\n", len(readers)))
-			// for i, reader := range readers {
-			// 	logger.LOGGER().Info(fmt.Sprintf("[%d] %s\n", i, reader))
-			// }
 
 			if len(readers) == 0 {
 				if broadcast != nil {
@@ -222,27 +223,16 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			// time.Sleep(3 * time.Second)
-		}
-	}()
-	// readers := <-chWaitReaders
-	// readers, err = util.ListReaders(ctx)
-	// if err != nil {
-	// 	logger.LOGGER().Error("ERROR ListReaders : ", err)
-	// }
-
-	go func() {
-		for {
-			newCardReaders := <-connectedCardReaders
-			// logger.LOGGER().Warn("NEW CONNECTING CARD READER : ", newCardReader)
-			util.AddCardReader(newCardReaders)
-			go util.CardReaderWatcher(ctx, newCardReaders, insertedCardChan)
 		}
 	}()
 
 	go func() {
 		for {
 			newInserted := <-insertedCardChan
+			logger.LOGGER().Println()
+			logger.LOGGER().Println(newInserted)
+			logger.LOGGER().Println()
+			continue
 			var card *scard.Card
 			if newInserted != "" {
 				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
