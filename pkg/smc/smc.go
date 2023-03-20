@@ -227,40 +227,43 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 		}
 	}()
 
-	// go func() {
-	for {
-		newInserted := <-insertedCardChan
-		var card *scard.Card
+	go func() {
+		for {
+			newInserted := <-insertedCardChan
+			var card *scard.Card
 
-		if newInserted != "" {
-			logger.LOGGER().Warn("NEW INSERT : ", newInserted)
-			newCard, data, err := s.readCard(ctx, newInserted, opts)
-			if err != nil {
-				logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
-				util.DisconnectCard(newCard)
-				time.Sleep(1 * time.Second)
+			if newInserted != "" {
+				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
+				newCard, data, err := s.readCard(ctx, newInserted, opts)
+				if err != nil {
+					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
+					util.DisconnectCard(newCard)
+					time.Sleep(1 * time.Second)
+					continue
+				}
+				if data != nil {
+					logger.LOGGER().Warn("NEW DATA : ", data)
+					logger.LOGGER().Warn("FROM : ", newInserted)
+					message := model.Message{
+						Reader:  newInserted,
+						Event:   "smc-data",
+						Payload: data,
+					}
+					// if newInserted == MIFARE_1 || newInserted == MIFARE_2 {
+					if strings.Contains(newInserted, MIFARE_1) || strings.Contains(newInserted, MIFARE_2) {
+						message.Event = "mifare-data"
+					}
+					broadcast <- message
+				}
+				util.WaitUntilCardRemove(ctx, newCardReaders, insertedCardChan)
+			} else {
+				util.DisconnectCard(card)
+				logger.LOGGER().Warn("CARD WAS REMOVE")
 				continue
 			}
-			if data != nil {
-				logger.LOGGER().Warn("NEW DATA : ", data)
-				logger.LOGGER().Warn("FROM : ", newInserted)
-				message := model.Message{
-					Reader:  newInserted,
-					Event:   "smc-data",
-					Payload: data,
-				}
-				// if newInserted == MIFARE_1 || newInserted == MIFARE_2 {
-				if strings.Contains(newInserted, MIFARE_1) || strings.Contains(newInserted, MIFARE_2) {
-					message.Event = "mifare-data"
-				}
-				broadcast <- message
-			}
-			util.WaitUntilCardRemove(ctx, newCardReaders, insertedCardChan)
-		} else {
-			util.DisconnectCard(card)
-			logger.LOGGER().Warn("CARD WAS REMOVE")
-			continue
 		}
+	}()
+	for {
+		time.Sleep(250 * time.Millisecond)
 	}
-	// }()
 }
