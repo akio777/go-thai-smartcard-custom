@@ -172,10 +172,9 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	var Mtx sync.Mutex
 	cardReaderAmount := 0
 
-	var newCardReaders []scard.ReaderState
 	go func() {
 		for {
-			newCardReaders = <-connectedCardReaders
+			newCardReaders := <-connectedCardReaders
 			util.AddCardReader(newCardReaders)
 			go util.CardReaderWatcher(ctx, newCardReaders, insertedCardChan)
 		}
@@ -254,11 +253,16 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 						message.Event = "mifare-data"
 					}
 					broadcast <- message
+					time.Sleep(1 * time.Second)
+					util.DisconnectCard(card)
+					continue
 				}
-				util.WaitUntilCardRemove(ctx, newCardReaders, insertedCardChan)
+			} else {
+				time.Sleep(1 * time.Second)
+				util.DisconnectCard(card)
 				logger.LOGGER().Warn("CARD WAS REMOVE")
+				continue
 			}
-			util.DisconnectCard(card)
 		}
 	}()
 	for {
