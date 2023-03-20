@@ -2,8 +2,8 @@ SMC_AGENT_PORT=9898
 SMC_SHOW_IMAGE=true
 SMC_SHOW_NHSO=true
 SMC_SHOW_LASER=true
-# export GOOS=windows
-# export GOARCH=amd64
+# export GOOS=windows && export GOARCH=amd64
+# unset GOOS && unset GOARCH
 export SMC_PORT
 export SMC_SHOW_IMAGE
 export SMC_SHOW_NHSO
@@ -24,7 +24,7 @@ build-mac:
 
 build-win:
 	go build -o ./bin/thai-smartcard-agent.windows-amd64.exe ./cmd/agent/main.go
-	# go build -ldflags "-H windowsgui"  -o ./bin/thai-smartcard-agent.windows-amd64.exe ./cmd/agent/main.go
+	# go build -ldflags "-H windowsgui" -o ./bin/thai-smartcard-agent.windows-amd64.exe ./cmd/agent/main.go
 
 build-wasm:
 	GOOS=js GOARCH=wasm go build -o bin/wasm/thai-smartcard-agent.wasm ./cmd/agent/main.go

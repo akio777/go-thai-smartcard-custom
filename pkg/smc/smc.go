@@ -100,16 +100,16 @@ func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (
 		return card, nil, err
 	}
 
-	// defer func(card *scard.Card) {
-	// 	if rcv := recover(); rcv != nil {
-	// 		_, e := card.Status()
-	// 		if e != nil {
-	// 			log.Println("Recover readCard:", e.Error())
-	// 			return
-	// 		}
-	// 		log.Println("Recover readCard:", rcv)
-	// 	}
-	// }(card)
+	defer func(card *scard.Card) {
+		if rcv := recover(); rcv != nil {
+			_, e := card.Status()
+			if e != nil {
+				log.Println("Recover readCard:", e.Error())
+				return
+			}
+			log.Println("Recover readCard:", rcv)
+		}
+	}(card)
 
 	status, err := card.Status()
 	if err != nil {
@@ -251,6 +251,7 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 				if err != nil {
 					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
 					util.DisconnectCard(card)
+					continue
 				}
 				if data != nil {
 					logger.LOGGER().Warn("NEW DATA : ", data)
@@ -266,10 +267,12 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 					}
 					broadcast <- message
 					util.DisconnectCard(card)
+					continue
 				}
 			} else {
 				util.DisconnectCard(card)
 				logger.LOGGER().Warn("CARD WAS REMOVE")
+				continue
 			}
 		}
 	}()
