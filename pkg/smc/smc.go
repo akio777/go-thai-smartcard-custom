@@ -119,13 +119,13 @@ func (s *smartCard) readCard(ctx *scard.Context, reader string, opts *Options) (
 
 	cmd := util.GetResponseCommand(status.Atr)
 	data := model.Data{}
-	if strings.Contains(status.Reader, MIFARE) {
+	if strings.Contains(status.Reader, MIFARE_1) || strings.Contains(status.Reader, MIFARE_2) {
 		mifareReader := NewMifareReader(card, cmd)
 		mifareReader.Select()
 		data.Personal = &model.Personal{
 			Cid: mifareReader.uid,
 		}
-	} else if strings.Contains(status.Reader, THAI_SMC) {
+	} else if strings.Contains(status.Reader, THAI_SMC_1) || strings.Contains(status.Reader, THAI_SMC_2) {
 		personalReader := NewPersonalReader(card, cmd)
 		personalReader.Select()
 		data.Personal = personalReader.Read(opts.ShowFaceImage)
