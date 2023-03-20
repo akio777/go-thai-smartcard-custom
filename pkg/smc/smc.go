@@ -256,11 +256,9 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 					broadcast <- message
 				}
 				util.WaitUntilCardRemove(ctx, newCardReaders, insertedCardChan)
-			} else {
-				util.DisconnectCard(card)
 				logger.LOGGER().Warn("CARD WAS REMOVE")
-				continue
 			}
+			util.DisconnectCard(card)
 		}
 	}()
 	for {
