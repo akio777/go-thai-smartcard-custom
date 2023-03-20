@@ -172,9 +172,10 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 	var Mtx sync.Mutex
 	cardReaderAmount := 0
 
+	var newCardReaders []scard.ReaderState
 	go func() {
 		for {
-			newCardReaders := <-connectedCardReaders
+			newCardReaders = <-connectedCardReaders
 			util.AddCardReader(newCardReaders)
 			go util.CardReaderWatcher(ctx, newCardReaders, insertedCardChan)
 		}
@@ -226,47 +227,40 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 		}
 	}()
 
-	go func() {
-		for {
-			newInserted := <-insertedCardChan
-			logger.LOGGER().Println()
-			logger.LOGGER().Println(newInserted)
-			logger.LOGGER().Println()
-			continue
-			var card *scard.Card
-			if newInserted != "" {
-				logger.LOGGER().Warn("NEW INSERT : ", newInserted)
-				newCard, data, err := s.readCard(ctx, newInserted, opts)
-				card = newCard
-				if err != nil {
-					logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
-					util.DisconnectCard(card)
-					continue
-				}
-				if data != nil {
-					logger.LOGGER().Warn("NEW DATA : ", data)
-					logger.LOGGER().Warn("FROM : ", newInserted)
-					message := model.Message{
-						Reader:  newInserted,
-						Event:   "smc-data",
-						Payload: data,
-					}
-					// if newInserted == MIFARE_1 || newInserted == MIFARE_2 {
-					if strings.Contains(newInserted, MIFARE_1) || strings.Contains(newInserted, MIFARE_2) {
-						message.Event = "mifare-data"
-					}
-					broadcast <- message
-					util.DisconnectCard(card)
-					continue
-				}
-			} else {
-				util.DisconnectCard(card)
-				logger.LOGGER().Warn("CARD WAS REMOVE")
+	// go func() {
+	for {
+		newInserted := <-insertedCardChan
+		var card *scard.Card
+
+		if newInserted != "" {
+			logger.LOGGER().Warn("NEW INSERT : ", newInserted)
+			newCard, data, err := s.readCard(ctx, newInserted, opts)
+			if err != nil {
+				logger.LOGGER().Warn("ERROR FROM READCARD : ", err)
+				util.DisconnectCard(newCard)
+				time.Sleep(1 * time.Second)
 				continue
 			}
+			if data != nil {
+				logger.LOGGER().Warn("NEW DATA : ", data)
+				logger.LOGGER().Warn("FROM : ", newInserted)
+				message := model.Message{
+					Reader:  newInserted,
+					Event:   "smc-data",
+					Payload: data,
+				}
+				// if newInserted == MIFARE_1 || newInserted == MIFARE_2 {
+				if strings.Contains(newInserted, MIFARE_1) || strings.Contains(newInserted, MIFARE_2) {
+					message.Event = "mifare-data"
+				}
+				broadcast <- message
+			}
+			util.WaitUntilCardRemove(ctx, newCardReaders, insertedCardChan)
+		} else {
+			util.DisconnectCard(card)
+			logger.LOGGER().Warn("CARD WAS REMOVE")
+			continue
 		}
-	}()
-	for {
-
 	}
+	// }()
 }
