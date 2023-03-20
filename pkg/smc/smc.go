@@ -259,7 +259,8 @@ func (s *smartCard) StartDaemon(broadcast chan model.Message, opts *Options) err
 						Event:   "smc-data",
 						Payload: data,
 					}
-					if newInserted == MIFARE {
+					// if newInserted == MIFARE_1 || newInserted == MIFARE_2 {
+					if strings.Contains(newInserted, MIFARE_1) || strings.Contains(newInserted, MIFARE_2) {
 						message.Event = "mifare-data"
 					}
 					broadcast <- message
