@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
-	"github.com/somprasongd/go-thai-smartcard/pkg/model"
-	"github.com/somprasongd/go-thai-smartcard/pkg/server"
-	"github.com/somprasongd/go-thai-smartcard/pkg/smc"
-	"github.com/somprasongd/go-thai-smartcard/pkg/util"
+	"go-thai-smartcard-custom/pkg/logger"
+	"go-thai-smartcard-custom/pkg/model"
+	"go-thai-smartcard-custom/pkg/server"
+	"go-thai-smartcard-custom/pkg/smc"
+	"go-thai-smartcard-custom/pkg/util"
 )
 
 func main() {

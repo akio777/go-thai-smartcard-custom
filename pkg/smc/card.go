@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/ebfe/scard"
-	"github.com/somprasongd/go-thai-smartcard/pkg/apdu"
-	"github.com/somprasongd/go-thai-smartcard/pkg/util"
+	"go-thai-smartcard-custom/pkg/apdu"
+	"go-thai-smartcard-custom/pkg/util"
 )
 
 type cardReader struct {

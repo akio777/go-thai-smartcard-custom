@@ -9,7 +9,7 @@ import (
 	"github.com/googollee/go-socket.io/engineio/transport"
 	"github.com/googollee/go-socket.io/engineio/transport/polling"
 	"github.com/googollee/go-socket.io/engineio/transport/websocket"
-	"github.com/somprasongd/go-thai-smartcard/pkg/model"
+	"go-thai-smartcard-custom/pkg/model"
 )
 
 // Easier to get running with CORS.

@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/ebfe/scard"
-	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
-	"github.com/somprasongd/go-thai-smartcard/pkg/model"
-	"github.com/somprasongd/go-thai-smartcard/pkg/util"
+	"go-thai-smartcard-custom/pkg/logger"
+	"go-thai-smartcard-custom/pkg/model"
+	"go-thai-smartcard-custom/pkg/util"
 )
 
 type Options struct {

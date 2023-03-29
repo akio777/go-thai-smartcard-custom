@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/somprasongd/go-thai-smartcard/pkg/logger"
-	"github.com/somprasongd/go-thai-smartcard/pkg/model"
+	"go-thai-smartcard-custom/pkg/logger"
+	"go-thai-smartcard-custom/pkg/model"
 )
 
 type ServerConfig struct {

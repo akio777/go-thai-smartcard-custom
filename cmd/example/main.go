@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/somprasongd/go-thai-smartcard/pkg/smc"
+	"go-thai-smartcard-custom/pkg/smc"
 )
 
 func main() {
