@@ -14,7 +14,7 @@ func InitLogger() {
 		ForceQuote:      true,
 		DisableQuote:    true,
 	})
-	_logger.SetReportCaller(true)
+	//_logger.SetReportCaller(true)
 }
 
 func LOGGER() *logrus.Logger {
